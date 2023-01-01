@@ -85,7 +85,8 @@ def init(imgSize):
     with dpg.texture_registry(show=False):
         dpg.add_dynamic_texture(width=default_values.SIZE, height=default_values.SIZE,
                                 default_value=texture_data, tag="texture_tag")
-    dpg.create_viewport(title='Custom Title', width=1300, height=1000)
+    dpg.create_viewport(
+        title='Custom Title', width=default_values.WINDOW_SIZE[0], height=default_values.WINDOW_SIZE[1])
 
     with dpg.window(label="FracRendering"):
         with dpg.group(label="Options"):

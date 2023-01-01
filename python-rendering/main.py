@@ -1,10 +1,11 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
 
-# TODO: Implement in C++ for performance
+# TODO: Implement calc_mandelbrot and render_texture in C++ for performance
+# TODO: Dynamic size not working properly
 
 
-def CalcMandelbrot(x, y, iterations, escape_constant):
+def calc_mandelbrot(x, y, iterations, escape_constant):
     constant = np.complex128(x + (y*1j))
     nextZ = constant  # Skipping first iteration
 
@@ -16,7 +17,7 @@ def CalcMandelbrot(x, y, iterations, escape_constant):
     return iterations
 
 
-def RenderTexture(imgSize=256, iterations=3, offset=[0, 0], step=1, escape_constant=50):
+def render_texture(imgSize=256, iterations=3, offset=[0, 0], step=1, escape_constant=50):
     texture_data = []
     c = 1
 
@@ -24,7 +25,7 @@ def RenderTexture(imgSize=256, iterations=3, offset=[0, 0], step=1, escape_const
         x = (i % imgSize - (imgSize/2))*step - offset[0]
         y = (np.floor_divide(i, imgSize) - (imgSize/2))*step - offset[1]
 
-        escape_time = CalcMandelbrot(x, y, iterations, escape_constant)
+        escape_time = calc_mandelbrot(x, y, iterations, escape_constant)
         if escape_time > iterations/2:
             factor = ((iterations - 1)-(escape_time))/(iterations - 1)
 
@@ -52,7 +53,7 @@ def RenderTexture(imgSize=256, iterations=3, offset=[0, 0], step=1, escape_const
     return texture_data
 
 
-def SaveBtn_callback(sender, app_data, user_data):
+def save_btn_callback(sender, app_data, user_data):
     size = dpg.get_value(user_data[0])
     iterations = dpg.get_value(user_data[1])
     x = dpg.get_value(user_data[2])
@@ -62,21 +63,21 @@ def SaveBtn_callback(sender, app_data, user_data):
 
     print("Rendering...")
 
-    new_texture = RenderTexture(
+    new_texture_data = render_texture(
         imgSize=size, iterations=iterations, offset=[x, y], step=step, escape_constant=escape)
 
     print("Image Rendered")
 
-    dpg.set_value("texture_tag", new_texture)
+    dpg.set_value("texture_tag", new_texture_data)
 
 
-def Init(imgSize):
+def init(imgSize):
     dpg.create_context()
 
     print("Initializing...")
 
     print("Rendering...")
-    texture_data = RenderTexture(imgSize)
+    texture_data = render_texture(imgSize)
     print("Image Rendered")
 
     with dpg.texture_registry(show=False):
@@ -87,26 +88,26 @@ def Init(imgSize):
     with dpg.window(label="FracRendering"):
         with dpg.group(label="Options"):
             dpg.add_text("Fractal Rendering")
-            size_slider = dpg.add_input_int(
+            size_input = dpg.add_input_int(
                 label="Size", default_value=1024)
-            x_slider = dpg.add_input_float(
+            x_offset_input = dpg.add_input_float(
                 label="X Offset", default_value=0)
-            y_slider = dpg.add_input_float(
+            y_offset_input = dpg.add_input_float(
                 label="Y Offset", default_value=0)
-            step_slider = dpg.add_input_int(
-                label="Pixel Step", default_value=1)
-            iterations_slider = dpg.add_input_int(
+            zoom_input = dpg.add_input_int(
+                label="Zoom", default_value=1)
+            iterations_input = dpg.add_input_int(
                 label="Iterations", default_value=3)
-            escape_slider = dpg.add_input_float(
+            escape_input = dpg.add_input_float(
                 label="Escape Value", default_value=50)
             saveBtn = dpg.add_button(label="Save Values")
 
         with dpg.group():
             dpg.add_image("texture_tag")
 
-        dpg.set_item_callback(saveBtn, SaveBtn_callback)
+        dpg.set_item_callback(saveBtn, save_btn_callback)
         dpg.set_item_user_data(
-            saveBtn, [size_slider, iterations_slider, x_slider, y_slider, step_slider, escape_slider])
+            saveBtn, [size_input, iterations_input, x_offset_input, y_offset_input, zoom_input, escape_input])
 
     dpg.setup_dearpygui()
     dpg.show_viewport()
@@ -116,4 +117,4 @@ def Init(imgSize):
     print("Initialized")
 
 
-Init(1024)
+init(1024)

@@ -1,5 +1,6 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
+import default_values
 
 # TODO: Implement calc_mandelbrot and render_texture in C++ for performance
 # TODO: Dynamic size not working properly
@@ -77,11 +78,12 @@ def init(imgSize):
     print("Initializing...")
 
     print("Rendering...")
-    texture_data = render_texture(imgSize)
+    texture_data = render_texture(
+        default_values.SIZE, default_values.ITERATIONS, default_values.OFFSET, 1/default_values.ZOOM, default_values.ESCAPE_CONSTANT)
     print("Image Rendered")
 
     with dpg.texture_registry(show=False):
-        dpg.add_dynamic_texture(width=imgSize, height=imgSize,
+        dpg.add_dynamic_texture(width=default_values.SIZE, height=default_values.SIZE,
                                 default_value=texture_data, tag="texture_tag")
     dpg.create_viewport(title='Custom Title', width=1300, height=1000)
 
@@ -89,25 +91,25 @@ def init(imgSize):
         with dpg.group(label="Options"):
             dpg.add_text("Fractal Rendering")
             size_input = dpg.add_input_int(
-                label="Size", default_value=1024)
+                label="Size", default_value=default_values.SIZE)
             x_offset_input = dpg.add_input_float(
-                label="X Offset", default_value=0)
+                label="X Offset", default_value=default_values.OFFSET[0])
             y_offset_input = dpg.add_input_float(
-                label="Y Offset", default_value=0)
+                label="Y Offset", default_value=default_values.OFFSET[1])
             zoom_input = dpg.add_input_int(
-                label="Zoom", default_value=1)
+                label="Zoom", default_value=default_values.ZOOM)
             iterations_input = dpg.add_input_int(
-                label="Iterations", default_value=3)
+                label="Iterations", default_value=default_values.ITERATIONS)
             escape_input = dpg.add_input_float(
-                label="Escape Value", default_value=50)
-            saveBtn = dpg.add_button(label="Save Values")
+                label="Escape Value", default_value=default_values.ESCAPE_CONSTANT)
+            save_btn = dpg.add_button(label="Save Values")
 
         with dpg.group():
             dpg.add_image("texture_tag")
 
-        dpg.set_item_callback(saveBtn, save_btn_callback)
+        dpg.set_item_callback(save_btn, save_btn_callback)
         dpg.set_item_user_data(
-            saveBtn, [size_input, iterations_input, x_offset_input, y_offset_input, zoom_input, escape_input])
+            save_btn, [size_input, iterations_input, x_offset_input, y_offset_input, zoom_input, escape_input])
 
     dpg.setup_dearpygui()
     dpg.show_viewport()

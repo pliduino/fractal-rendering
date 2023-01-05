@@ -1,11 +1,11 @@
 CC = g++
 CFLAGS = -Wall
-SRC = src
-OUTPUT = out
+SRC = cpp-generation/src
+OUTPUT = cpp-generation/out
 MAIN = main
-INCLUDE = include
+INCLUDE = cpp-generation/include cpp-generation/pybind11/include
 
-FILES = $(shell find ./src/**/*.cpp)
+FILES = $(shell find cpp-generation/src/**/*.cpp)
 OBJECTS = $(FILES:.cpp=.o)
 
 
@@ -15,7 +15,7 @@ $(shell mkdir -p $(OUTPUT))
 	$(CC) $(CFLAGS) $< -c -o $@
 
 all: $(OBJECTS)
-	$(CC) -I$(INCLUDE) $(CFLAGS) -o $(OUTPUT)/$(MAIN) $(OBJECTS) -lSDL2main -lSDL2
+	$(CC) -I$(INCLUDE) $(CFLAGS) -o $(OUTPUT)/$(MAIN) $(OBJECTS)
 
 run: all
 	./$(OUTPUT)/$(MAIN)

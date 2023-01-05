@@ -3,3 +3,5 @@ include
 out
 .idea
 **/__pycache__
+**/target
+/venv

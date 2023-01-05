@@ -8,15 +8,13 @@ int main(int argc, char const *argv[])
 {
     const int width = 600, height = 400;
 
-    // IFractalGenerator *fractalGenerator = new MandelbrotGenerator();
+    IFractalGenerator *fractalGenerator = new MandelbrotGenerator();
 
-    Rendering::FractalRenderer *renderer = new Rendering::FractalRenderer(width, height);
+    // Rendering::FractalRenderer *renderer = new Rendering::FractalRenderer(width, height);
 
-    // FractalData *data = fractalGenerator->Generate();
+    FractalData *data = fractalGenerator->Generate();
 
-    FractalData *data = nullptr;
-
-    renderer->Render(data);
+    // renderer->Render(data);
 
     return 0;
 }

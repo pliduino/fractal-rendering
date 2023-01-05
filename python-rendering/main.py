@@ -1,57 +1,60 @@
 import dearpygui.dearpygui as dpg
 import numpy as np
 import default_values
+import rust_generation
 
-# TODO: Implement calc_mandelbrot and render_texture in C++ for performance
 # TODO: Dynamic size not working properly
 
 
-def calc_mandelbrot(x, y, iterations, escape_constant):
-    constant = np.complex128(x + (y*1j))
-    nextZ = constant  # Skipping first iteration
+# def calc_mandelbrot(x, y, iterations, escape_constant):
+#     constant = np.complex128(x + (y*1j))
+#     nextZ = constant  # Skipping first iteration
 
-    for i in range(iterations):
-        nextZ = (nextZ*nextZ) + constant
-        if abs(nextZ - constant) > escape_constant:
-            return i
+#     for i in range(iterations):
+#         nextZ = np.multiply(nextZ, nextZ) + constant
+#         if np.abs(nextZ - constant) > escape_constant:
+#             return i
 
-    return iterations
+#     return iterations
 
 
-def render_texture(imgSize=256, iterations=3, offset=[0, 0], step=1, escape_constant=50):
-    texture_data = []
-    c = 1
+# def render_texture(progress_bar, imgSize=256, iterations=3, offset=[0, 0], step=1, escape_constant=50):
+#     texture_data = []
+#     c = 1
 
-    for i in range(0, imgSize * imgSize):
-        x = (i % imgSize - (imgSize/2))*step - offset[0]
-        y = (np.floor_divide(i, imgSize) - (imgSize/2))*step - offset[1]
+#     for i in range(0, imgSize * imgSize):
+#         x = (i % imgSize - (imgSize/2))*step + offset[0]
+#         y = (np.floor_divide(i, imgSize) - (imgSize/2))*step + offset[1]
 
-        escape_time = calc_mandelbrot(x, y, iterations, escape_constant)
-        if escape_time > iterations/2:
-            factor = ((iterations - 1)-(escape_time))/(iterations - 1)
+#         escape_time = calc_mandelbrot(x, y, iterations, escape_constant)
+#         if escape_time > iterations/2:
+#             factor = ((iterations - 1)-(escape_time))/(iterations - 1)
+#             factor *= 2
 
-            red, green, blue = factor * \
-                (200/255), factor * (25/255), factor * (25/255)
-        else:
-            factor = ((iterations - 1)-(escape_time))/(iterations - 1)
-            factor = (factor - 0.5)*2
+#             red, green, blue = factor * \
+#                 (200/255), factor * (25/255), factor * (25/255)
+#         else:
+#             factor = ((iterations - 1)-(escape_time))/(iterations - 1)
+#             factor = (factor - 0.5)*2
 
-            red, green, blue = factor * \
-                (200/255), factor * (25/255), factor * (25/255)
+#             red, green, blue = (200/255), (25/255), (25/255)
 
-            red, green, blue = red + (factor*(-200/255)), green + (
-                factor*(+75/255)), + (factor*(+230/255))
+#             red, green, blue = red + (factor*(-200/255)), green + (
+#                 factor*(+75/255)), + (factor*(+230/255))
 
-        texture_data.append(red)
-        texture_data.append(green)
-        texture_data.append(blue)
-        texture_data.append(255 / 255)
-        if (i+1 == imgSize*c):
-            print(
-                f"Progress: {'%.2f' % (((i)/((imgSize*imgSize))) * 100)}%")
-            c += 1
+#         texture_data.append(red)
+#         texture_data.append(green)
+#         texture_data.append(blue)
+#         texture_data.append(255 / 255)
+#         if (i+1 == imgSize*c):
+#             progress = (((i)/((imgSize*imgSize))))
+#             print(
+#                 f"Progress: {'%.2f' % (progress*100)}%")
+#             if (progress_bar != 0):
+#                 dpg.set_value(progress_bar, progress)
+#             c += 1
 
-    return texture_data
+#     return texture_data
 
 
 def save_btn_callback(sender, app_data, user_data):
@@ -61,14 +64,16 @@ def save_btn_callback(sender, app_data, user_data):
     y = dpg.get_value(user_data[3])
     step = 1/dpg.get_value(user_data[4])
     escape = dpg.get_value(user_data[5])
+    progress_bar = user_data[6]
 
     print("Rendering...")
 
-    new_texture_data = render_texture(
-        imgSize=size, iterations=iterations, offset=[x, y], step=step, escape_constant=escape)
+    new_texture_data = rust_generation.generate_mandelbrot(
+        size, iterations, [x, y], step, escape)
 
     print("Image Rendered")
 
+    # dpg.configure_item("texture_tag", width=size, height=size)
     dpg.set_value("texture_tag", new_texture_data)
 
 
@@ -78,7 +83,7 @@ def init(imgSize):
     print("Initializing...")
 
     print("Rendering...")
-    texture_data = render_texture(
+    texture_data = rust_generation.generate_mandelbrot(
         default_values.SIZE, default_values.ITERATIONS, default_values.OFFSET, 1/default_values.ZOOM, default_values.ESCAPE_CONSTANT)
     print("Image Rendered")
 
@@ -91,6 +96,8 @@ def init(imgSize):
     with dpg.window(label="FracRendering"):
         with dpg.group(label="Options"):
             dpg.add_text("Fractal Rendering")
+            progress_bar = dpg.add_progress_bar(
+                label="progress", default_value=0, overlay="Progress")
             size_input = dpg.add_input_int(
                 label="Size", default_value=default_values.SIZE)
             x_offset_input = dpg.add_input_float(
@@ -110,7 +117,7 @@ def init(imgSize):
 
         dpg.set_item_callback(save_btn, save_btn_callback)
         dpg.set_item_user_data(
-            save_btn, [size_input, iterations_input, x_offset_input, y_offset_input, zoom_input, escape_input])
+            save_btn, [size_input, iterations_input, x_offset_input, y_offset_input, zoom_input, escape_input, progress_bar])
 
     dpg.setup_dearpygui()
     dpg.show_viewport()

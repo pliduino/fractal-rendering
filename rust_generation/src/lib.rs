@@ -1,23 +1,22 @@
+use num_complex::{self, ComplexFloat};
+
 use pyo3::prelude::*;
 
 #[pyfunction]
 unsafe fn calc_mandelbrot(x: f64, y: f64, iterations: u32, escape_constant: f64) -> PyResult<u32> {
-    let constant = [x, y];
-    let mut next_z = [x, y];
+    let constant = num_complex::Complex::new(x, y);
+    let mut next_z = num_complex::Complex::new(x, y);
 
     for i in 0..iterations {
-        // Z squared
-        next_z[0] = (next_z[0] * next_z[0]) - (next_z[1] * next_z[1]);
-        next_z[1] = 2.0 * next_z[0] * next_z[1];
+        next_z *= next_z;
 
-        let distance = f64::sqrt((next_z[0] * next_z[0]) + (next_z[1] * next_z[1]));
+        let distance = next_z.abs();
 
         if distance > escape_constant {
             return Ok(i);
         }
 
-        next_z[0] += constant[0];
-        next_z[1] += constant[1];
+        next_z += constant;
     }
 
     Ok(iterations)
@@ -33,7 +32,7 @@ unsafe fn generate_mandelbrot(
 ) -> PyResult<Vec<f64>> {
     let mut texture_data = vec![0.0; img_size * img_size * 4];
 
-    for i in (0..(img_size * img_size)).step_by(4) {
+    for i in 0..(img_size * img_size) {
         let x = ((i % img_size) as f64 - (img_size as f64 / 2.0)) * step + offset[0];
         let y =
             (f64::floor(i as f64 / img_size as f64) - (img_size as f64 / 2.0)) * step + offset[1];
@@ -64,10 +63,10 @@ unsafe fn generate_mandelbrot(
             rgb[1] += factor * (75.0 / 255.0);
             rgb[2] += factor * (230.0 / 255.0);
         }
-        texture_data[i as usize] = rgb[0];
-        texture_data[(i + 1) as usize] = rgb[1];
-        texture_data[(i + 2) as usize] = rgb[2];
-        texture_data[(i + 3) as usize] = 1.0;
+        texture_data[(i * 4) as usize] = rgb[0];
+        texture_data[((i * 4) + 1) as usize] = rgb[1];
+        texture_data[((i * 4) + 2) as usize] = rgb[2];
+        texture_data[((i * 4) + 3) as usize] = 1.0;
     }
 
     Ok(texture_data)

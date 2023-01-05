@@ -62,69 +62,80 @@ def save_btn_callback(sender, app_data, user_data):
     iterations = dpg.get_value(user_data[1])
     x = dpg.get_value(user_data[2])
     y = dpg.get_value(user_data[3])
-    step = 1/dpg.get_value(user_data[4])
+    step = 1/np.power(2, dpg.get_value(user_data[4]))
     escape = dpg.get_value(user_data[5])
     progress_bar = user_data[6]
+    program = user_data[7]
 
     print("Rendering...")
 
-    new_texture_data = rust_generation.generate_mandelbrot(
-        size, iterations, [x, y], step, escape)
+    new_texture_data = program.generator.generate_mandelbrot(
+        program.imgSize, iterations, [x, y], step, escape)
 
     print("Image Rendered")
 
-    # dpg.configure_item("texture_tag", width=size, height=size)
     dpg.set_value("texture_tag", new_texture_data)
 
 
-def init(imgSize):
-    dpg.create_context()
+class Program:
+    generator = 0
+    imgSize = 0
 
-    print("Initializing...")
+    def __init__(self, imgSize):
+        self.imgSize = imgSize
+        self.generator = rust_generation.MandelbrotGenerator(imgSize)
 
-    print("Rendering...")
-    texture_data = rust_generation.generate_mandelbrot(
-        default_values.SIZE, default_values.ITERATIONS, default_values.OFFSET, 1/default_values.ZOOM, default_values.ESCAPE_CONSTANT)
-    print("Image Rendered")
+    def init(self):
+        dpg.create_context()
 
-    with dpg.texture_registry(show=False):
-        dpg.add_dynamic_texture(width=default_values.SIZE, height=default_values.SIZE,
-                                default_value=texture_data, tag="texture_tag")
-    dpg.create_viewport(
-        title='Custom Title', width=default_values.WINDOW_SIZE[0], height=default_values.WINDOW_SIZE[1])
+        print("Initializing...")
 
-    with dpg.window(label="FracRendering"):
-        with dpg.group(label="Options"):
-            dpg.add_text("Fractal Rendering")
-            progress_bar = dpg.add_progress_bar(
-                label="progress", default_value=0, overlay="Progress")
-            size_input = dpg.add_input_int(
-                label="Size", default_value=default_values.SIZE)
-            x_offset_input = dpg.add_input_float(
-                label="X Offset", default_value=default_values.OFFSET[0])
-            y_offset_input = dpg.add_input_float(
-                label="Y Offset", default_value=default_values.OFFSET[1])
-            zoom_input = dpg.add_input_int(
-                label="Zoom", default_value=default_values.ZOOM)
-            iterations_input = dpg.add_input_int(
-                label="Iterations", default_value=default_values.ITERATIONS)
-            escape_input = dpg.add_input_float(
-                label="Escape Value", default_value=default_values.ESCAPE_CONSTANT)
-            save_btn = dpg.add_button(label="Save Values")
+        print("Rendering...")
+        texture_data = self.generator.generate_mandelbrot(
+            self.imgSize, default_values.ITERATIONS, default_values.OFFSET, 1/default_values.ZOOM, default_values.ESCAPE_CONSTANT)
+        print("Image Rendered")
 
-        with dpg.group():
-            dpg.add_image("texture_tag")
+        with dpg.texture_registry(show=False):
+            dpg.add_dynamic_texture(width=self.imgSize, height=self.imgSize,
+                                    default_value=texture_data, tag="texture_tag")
+        dpg.create_viewport(
+            title='Custom Title', width=default_values.WINDOW_SIZE[0], height=default_values.WINDOW_SIZE[1])
 
-        dpg.set_item_callback(save_btn, save_btn_callback)
-        dpg.set_item_user_data(
-            save_btn, [size_input, iterations_input, x_offset_input, y_offset_input, zoom_input, escape_input, progress_bar])
+        with dpg.window(label="FracRendering"):
+            with dpg.group(label="Options"):
+                dpg.add_text("Fractal Rendering")
+                progress_bar = dpg.add_progress_bar(
+                    label="progress", default_value=0, overlay="Progress")
+                size_input = dpg.add_input_int(
+                    label="Size", default_value=default_values.SIZE)
+                x_offset_input = dpg.add_input_float(
+                    label="X Offset", default_value=default_values.OFFSET[0])
+                y_offset_input = dpg.add_input_float(
+                    label="Y Offset", default_value=default_values.OFFSET[1])
+                zoom_input = dpg.add_input_int(
+                    label="Zoom", default_value=default_values.ZOOM)
+                iterations_input = dpg.add_input_int(
+                    label="Iterations", default_value=default_values.ITERATIONS)
+                escape_input = dpg.add_input_float(
+                    label="Escape Value", default_value=default_values.ESCAPE_CONSTANT)
+                save_btn = dpg.add_button(label="Save Values")
 
-    dpg.setup_dearpygui()
-    dpg.show_viewport()
-    dpg.start_dearpygui()
-    dpg.destroy_context()
+            with dpg.group():
+                dpg.add_image("texture_tag")
 
-    print("Initialized")
+            dpg.set_item_callback(save_btn, save_btn_callback)
+            dpg.set_item_user_data(
+                save_btn, [size_input, iterations_input, x_offset_input, y_offset_input, zoom_input, escape_input, progress_bar, self])
+
+        dpg.setup_dearpygui()
+
+        dpg.show_viewport()
+
+        print("Initialized")
+
+        dpg.start_dearpygui()
+        dpg.destroy_context()
 
 
-init(1024)
+program = Program(default_values.SIZE)
+program.init()

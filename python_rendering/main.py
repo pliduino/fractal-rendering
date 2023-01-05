@@ -58,32 +58,42 @@ import rust_generation
 
 
 def save_btn_callback(sender, app_data, user_data):
-    size = dpg.get_value(user_data[0])
-    iterations = dpg.get_value(user_data[1])
-    x = dpg.get_value(user_data[2])
-    y = dpg.get_value(user_data[3])
-    step = 1/np.power(2, dpg.get_value(user_data[4]))
-    escape = dpg.get_value(user_data[5])
-    progress_bar = user_data[6]
-    program = user_data[7]
+    iterations = dpg.get_value(user_data[0])
+    x = dpg.get_value(user_data[1])
+    y = dpg.get_value(user_data[2])
+    step = 1/np.power(2, dpg.get_value(user_data[3]))
+    escape = dpg.get_value(user_data[4])
+    program = user_data[5]
 
     print("Rendering...")
 
-    new_texture_data = program.generator.generate_mandelbrot(
-        program.imgSize, iterations, [x, y], step, escape)
+    new_texture_data = program.generator.generate_fractal(
+        program.imgSize, iterations, [x, y], step, escape, program.func)
 
     print("Image Rendered")
 
     dpg.set_value("texture_tag", new_texture_data)
 
 
+def list_box_callback(sender):
+    match dpg.get_value(sender):
+        case "Mandelbrot":
+            program.func = rust_generation.Generators.Mandelbrot
+        case "Cubic":
+            program.func = rust_generation.Generators.Cubic
+        case "Cos(z) * z":
+            program.func = rust_generation.Generators.Cosz
+
+
 class Program:
     generator = 0
     imgSize = 0
+    func = rust_generation.Generators.Mandelbrot
+    item_list = ["Mandelbrot", "Cubic", "Cos(z) * z"]
 
     def __init__(self, imgSize):
         self.imgSize = imgSize
-        self.generator = rust_generation.MandelbrotGenerator(imgSize)
+        self.generator = rust_generation.FractalGenerator(imgSize)
 
     def init(self):
         dpg.create_context()
@@ -91,8 +101,8 @@ class Program:
         print("Initializing...")
 
         print("Rendering...")
-        texture_data = self.generator.generate_mandelbrot(
-            self.imgSize, default_values.ITERATIONS, default_values.OFFSET, 1/default_values.ZOOM, default_values.ESCAPE_CONSTANT)
+        texture_data = self.generator.generate_fractal(
+            self.imgSize, default_values.ITERATIONS, default_values.OFFSET, 1/np.power(2, default_values.ZOOM), default_values.ESCAPE_CONSTANT, self.func)
         print("Image Rendered")
 
         with dpg.texture_registry(show=False):
@@ -104,10 +114,8 @@ class Program:
         with dpg.window(label="FracRendering"):
             with dpg.group(label="Options"):
                 dpg.add_text("Fractal Rendering")
-                progress_bar = dpg.add_progress_bar(
-                    label="progress", default_value=0, overlay="Progress")
-                size_input = dpg.add_input_int(
-                    label="Size", default_value=default_values.SIZE)
+                list_box = dpg.add_combo(
+                    items=self.item_list, callback=list_box_callback, default_value="Mandelbrot")
                 x_offset_input = dpg.add_input_float(
                     label="X Offset", default_value=default_values.OFFSET[0])
                 y_offset_input = dpg.add_input_float(
@@ -125,7 +133,7 @@ class Program:
 
             dpg.set_item_callback(save_btn, save_btn_callback)
             dpg.set_item_user_data(
-                save_btn, [size_input, iterations_input, x_offset_input, y_offset_input, zoom_input, escape_input, progress_bar, self])
+                save_btn, [iterations_input, x_offset_input, y_offset_input, zoom_input, escape_input, self])
 
         dpg.setup_dearpygui()
 

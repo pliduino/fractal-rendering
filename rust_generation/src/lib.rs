@@ -6,17 +6,26 @@ use num_complex::{self, ComplexFloat};
 use pyo3::prelude::*;
 
 #[pyclass]
-struct MandelbrotGenerator {}
+struct FractalGenerator {}
+
+#[derive(Clone)]
+#[pyclass]
+enum Generators {
+    Mandelbrot,
+    Cubic,
+    Cosz,
+}
 
 #[pymethods]
-impl MandelbrotGenerator {
-    unsafe fn generate_mandelbrot(
+impl FractalGenerator {
+    unsafe fn generate_fractal(
         &mut self,
         img_size: usize,
         iterations: u32,
         offset: [f64; 2],
         step: f64,
         escape_constant: f64,
+        gen_func: Generators,
     ) -> PyResult<Vec<f64>> {
         let mut texture_data = vec![0.0; img_size * img_size * 4];
 
@@ -37,7 +46,13 @@ impl MandelbrotGenerator {
                 let y = (f64::floor(i as f64 / img_size as f64) - (img_size as f64 / 2.0)) * step
                     + offset[1];
 
-                let escape_time = match calc_mandelbrot(x, y, iterations, escape_constant) {
+                let gen_func = match gen_func {
+                    Generators::Mandelbrot => gen_mandelbrot,
+                    Generators::Cubic => gen_cubic,
+                    Generators::Cosz => gen_cosz,
+                };
+
+                let escape_time = match calc_fractal(x, y, iterations, escape_constant, gen_func) {
                     Ok(x) => x,
                     Err(_) => panic!("Error!"),
                 };
@@ -68,22 +83,23 @@ impl MandelbrotGenerator {
     }
 
     #[new]
-    fn py_new(_size: usize) -> MandelbrotGenerator {
-        MandelbrotGenerator {}
+    fn py_new(_size: usize) -> FractalGenerator {
+        FractalGenerator {}
     }
 }
 
-unsafe fn calc_mandelbrot(
+unsafe fn calc_fractal(
     x: f64,
     y: f64,
     iterations: u32,
     escape_constant: f64,
+    gen_func: fn(num_complex::Complex<f64>) -> num_complex::Complex<f64>,
 ) -> Result<u32, u8> {
     let constant = num_complex::Complex::new(x, y);
     let mut next_z = num_complex::Complex::new(x, y);
 
     for i in 0..iterations {
-        next_z = next_z * next_z;
+        next_z = gen_func(next_z);
 
         let distance = next_z.abs();
 
@@ -97,8 +113,19 @@ unsafe fn calc_mandelbrot(
     Ok(iterations)
 }
 
+fn gen_mandelbrot(z: num_complex::Complex<f64>) -> num_complex::Complex<f64> {
+    z * z
+}
+fn gen_cubic(z: num_complex::Complex<f64>) -> num_complex::Complex<f64> {
+    z * z * z
+}
+fn gen_cosz(z: num_complex::Complex<f64>) -> num_complex::Complex<f64> {
+    z.cos() * z
+}
+
 #[pymodule]
 fn rust_generation(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_class::<MandelbrotGenerator>()?;
+    m.add_class::<FractalGenerator>()?;
+    m.add_class::<Generators>()?;
     Ok(())
 }

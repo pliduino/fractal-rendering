@@ -32,7 +32,7 @@ unsafe fn generate_mandelbrot(
 ) -> PyResult<Vec<f64>> {
     let mut texture_data = vec![0.0; img_size * img_size * 4];
 
-    for i in 0..(img_size * img_size) {
+    for i in ..(img_size * img_size) {
         let x = ((i % img_size) as f64 - (img_size as f64 / 2.0)) * step + offset[0];
         let y =
             (f64::floor(i as f64 / img_size as f64) - (img_size as f64 / 2.0)) * step + offset[1];

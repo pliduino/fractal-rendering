@@ -1,5 +1,6 @@
 use std::ops;
-#[derive(Default, Copy, Clone)]
+
+#[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub struct Color {
     pub r: f64,
     pub g: f64,
@@ -7,7 +8,8 @@ pub struct Color {
 }
 
 impl Color {
-    pub fn _new() -> Color {
+    #[allow(dead_code)]
+    pub fn new() -> Color {
         Color {
             r: 0.0,
             g: 0.0,
@@ -49,5 +51,34 @@ impl ops::Mul<f64> for Color {
             g: self.g * other,
             b: self.b * other,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn color_add_test() {
+        let color_1 = Color {
+            r: 5.0,
+            g: 2.0,
+            b: 24.0,
+        };
+        let color_2 = Color {
+            r: 10.0,
+            g: 5.0,
+            b: 14.0,
+        };
+
+        let result = color_1 + color_2;
+        assert_eq!(
+            result,
+            Color {
+                r: 15.0,
+                g: 7.0,
+                b: 38.0
+            }
+        );
     }
 }

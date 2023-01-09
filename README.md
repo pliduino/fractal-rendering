@@ -1,13 +1,9 @@
-```
-python -m venv venv
+For Windows users (Currently does not support Linux, you can install it manually though):
+
+``` make
+make 
 ```
 
-```
-./venv/Scripts/activate
-```
-
-```
-pip install -r requirements.txt
-```
-
+``` make
+make run
 ```

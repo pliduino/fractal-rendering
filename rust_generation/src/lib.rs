@@ -1,9 +1,10 @@
+use num_complex::{self, ComplexFloat};
+use pyo3::prelude::*;
+use std::collections::VecDeque;
+use std::thread;
+
 mod color;
 use color::Color;
-
-use num_complex::{self, ComplexFloat};
-
-use pyo3::prelude::*;
 
 #[pyclass]
 struct FractalGenerator {}
@@ -29,7 +30,7 @@ impl FractalGenerator {
     ) -> PyResult<Vec<f64>> {
         let mut texture_data = vec![0.0; img_size * img_size * 4];
 
-        let color_1 = color::Color {
+        let color_1 = Color {
             r: 200.0,
             g: 25.0,
             b: 25.0,
@@ -39,47 +40,64 @@ impl FractalGenerator {
             g: 200.0,
             b: 255.0,
         };
+        let mut queue = VecDeque::<usize>::new();
 
         for i in 0..(img_size * img_size) {
-            let rgb = {
-                let x = ((i % img_size) as f64 - (img_size as f64 / 2.0)) * step + offset[0];
-                let y = (f64::floor(i as f64 / img_size as f64) - (img_size as f64 / 2.0)) * step
-                    + offset[1];
+            queue.push_back(i);
+        }
+        {
+            // let threads = 1;
 
-                let gen_func = match gen_func {
-                    Generators::Mandelbrot => gen_mandelbrot,
-                    Generators::Cubic => gen_cubic,
-                    Generators::Cosz => gen_cosz,
+            let handle = thread::spawn(move || loop {
+                let i = match queue.pop_front() {
+                    Some(x) => x,
+                    None => return texture_data,
                 };
 
-                let escape_time = match calc_fractal(x, y, iterations, escape_constant, gen_func) {
-                    Ok(x) => x,
-                    Err(_) => panic!("Error!"),
+                let rgb = {
+                    let x = ((i % img_size) as f64 - (img_size as f64 / 2.0)) * step + offset[0];
+                    let y = (f64::floor(i as f64 / img_size as f64) - (img_size as f64 / 2.0))
+                        * step
+                        + offset[1];
+
+                    let gen_func = match gen_func {
+                        Generators::Mandelbrot => gen_mandelbrot,
+                        Generators::Cubic => gen_cubic,
+                        Generators::Cosz => gen_cosz,
+                    };
+
+                    let escape_time =
+                        match calc_fractal(x, y, iterations, escape_constant, gen_func) {
+                            Ok(x) => x,
+                            Err(_) => panic!("Error!"),
+                        };
+
+                    let color: Color;
+
+                    if escape_time > iterations / 2 {
+                        let factor = ((iterations) - (escape_time)) as f64 / (iterations) as f64;
+                        let factor = factor * 2.0;
+
+                        color = color_1 * factor;
+                    } else {
+                        let factor = ((iterations) - (escape_time)) as f64 / (iterations) as f64;
+                        let factor = (factor - 0.5) * 2.0;
+                        color = color_1 + ((color_2 - color_1) * factor);
+                    }
+
+                    color
                 };
 
-                let color: Color;
+                texture_data[(i * 4) as usize] = rgb.r / 255.0;
+                texture_data[((i * 4) + 1) as usize] = rgb.g / 255.0;
+                texture_data[((i * 4) + 2) as usize] = rgb.b / 255.0;
+                texture_data[((i * 4) + 3) as usize] = 1.0;
+            });
 
-                if escape_time > iterations / 2 {
-                    let factor = ((iterations) - (escape_time)) as f64 / (iterations) as f64;
-                    let factor = factor * 2.0;
-
-                    color = color_1 * factor;
-                } else {
-                    let factor = ((iterations) - (escape_time)) as f64 / (iterations) as f64;
-                    let factor = (factor - 0.5) * 2.0;
-                    color = color_1 + ((color_2 - color_1) * factor);
-                }
-
-                color
-            };
-
-            texture_data[(i * 4) as usize] = rgb.r / 255.0;
-            texture_data[((i * 4) + 1) as usize] = rgb.g / 255.0;
-            texture_data[((i * 4) + 2) as usize] = rgb.b / 255.0;
-            texture_data[((i * 4) + 3) as usize] = 1.0;
+            texture_data = handle.join().expect("error joining thread");
         }
 
-        Ok(texture_data)
+        return Ok(texture_data);
     }
 
     #[new]

@@ -42,10 +42,11 @@ impl ops::Sub for Color {
     }
 }
 
-impl ops::Mul<f64> for Color {
+impl<T: Into<f64>> ops::Mul<T> for Color {
     type Output = Color;
 
-    fn mul(self, other: f64) -> Self::Output {
+    fn mul(self, other: T) -> Self::Output {
+        let other = other.into();
         Color {
             r: self.r * other,
             g: self.g * other,

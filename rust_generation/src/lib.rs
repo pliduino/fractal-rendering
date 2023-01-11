@@ -1,6 +1,7 @@
 use num_complex::{self, ComplexFloat};
 use pyo3::prelude::*;
 use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 mod color;
@@ -9,7 +10,7 @@ use color::Color;
 #[pyclass]
 struct FractalGenerator {}
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 #[pyclass]
 enum Generators {
     Mandelbrot,
@@ -28,7 +29,7 @@ impl FractalGenerator {
         escape_constant: f64,
         gen_func: Generators,
     ) -> PyResult<Vec<f64>> {
-        let mut texture_data = vec![0.0; img_size * img_size * 4];
+        let texture_data = vec![0.0; img_size * img_size * 4];
 
         let color_1 = Color {
             r: 200.0,
@@ -40,69 +41,144 @@ impl FractalGenerator {
             g: 200.0,
             b: 255.0,
         };
+
         let mut queue = VecDeque::<usize>::new();
+
+        const THREAD_COUNT: usize = 8;
 
         for i in 0..(img_size * img_size) {
             queue.push_back(i);
         }
-        {
-            // let threads = 1;
 
-            let handle = thread::spawn(move || loop {
-                let i = match queue.pop_front() {
-                    Some(x) => x,
-                    None => return texture_data,
-                };
+        let message = ThreadHandle {
+            queue: Arc::new(Mutex::new(queue)),
+            texture_data: Arc::new(Mutex::new(texture_data)),
+            img_size,
+            escape_constant,
+            color_1,
+            color_2,
+            step,
+            gen_func,
+            offset,
+            iterations,
+        };
 
-                let rgb = {
-                    let x = ((i % img_size) as f64 - (img_size as f64 / 2.0)) * step + offset[0];
-                    let y = (f64::floor(i as f64 / img_size as f64) - (img_size as f64 / 2.0))
-                        * step
-                        + offset[1];
+        unsafe {
+            let threads: Vec<_> = (0..THREAD_COUNT)
+                .map(|_i| {
+                    let message_reference = message.clone();
+                    thread::spawn(move || {
+                        let message = message_reference;
+                        loop {
+                            let i = match message.queue.lock().unwrap().pop_front() {
+                                Some(x) => x,
+                                None => break,
+                            };
 
-                    let gen_func = match gen_func {
-                        Generators::Mandelbrot => gen_mandelbrot,
-                        Generators::Cubic => gen_cubic,
-                        Generators::Cosz => gen_cosz,
-                    };
+                            let rgb = {
+                                let x = ((i % message.img_size) as f64
+                                    - (message.img_size as f64 / 2.0))
+                                    * message.step
+                                    + message.offset[0];
+                                let y = (f64::floor(i as f64 / message.img_size as f64)
+                                    - (message.img_size as f64 / 2.0))
+                                    * step
+                                    + offset[1];
 
-                    let escape_time =
-                        match calc_fractal(x, y, iterations, escape_constant, gen_func) {
-                            Ok(x) => x,
-                            Err(_) => panic!("Error!"),
-                        };
+                                let gen_func = match message.gen_func {
+                                    Generators::Mandelbrot => gen_mandelbrot,
+                                    Generators::Cubic => gen_cubic,
+                                    Generators::Cosz => gen_cosz,
+                                };
 
-                    let color: Color;
+                                let escape_time = match calc_fractal(
+                                    x,
+                                    y,
+                                    message.iterations,
+                                    message.escape_constant,
+                                    gen_func,
+                                ) {
+                                    Ok(x) => x,
+                                    Err(_) => panic!("Error!"),
+                                };
 
-                    if escape_time > iterations / 2 {
-                        let factor = ((iterations) - (escape_time)) as f64 / (iterations) as f64;
-                        let factor = factor * 2.0;
+                                let color: Color;
 
-                        color = color_1 * factor;
-                    } else {
-                        let factor = ((iterations) - (escape_time)) as f64 / (iterations) as f64;
-                        let factor = (factor - 0.5) * 2.0;
-                        color = color_1 + ((color_2 - color_1) * factor);
-                    }
+                                if escape_time > message.iterations / 2 {
+                                    let factor = ((message.iterations) - (escape_time)) as f64
+                                        / (message.iterations) as f64;
+                                    let factor = factor * 2.0;
 
-                    color
-                };
+                                    color = color_1 * factor;
+                                } else {
+                                    let factor = ((message.iterations) - (escape_time)) as f64
+                                        / (message.iterations) as f64;
+                                    let factor = (factor - 0.5) * 2.0;
+                                    color = message.color_1
+                                        + ((message.color_2 - message.color_1) * factor);
+                                }
 
-                texture_data[(i * 4) as usize] = rgb.r / 255.0;
-                texture_data[((i * 4) + 1) as usize] = rgb.g / 255.0;
-                texture_data[((i * 4) + 2) as usize] = rgb.b / 255.0;
-                texture_data[((i * 4) + 3) as usize] = 1.0;
-            });
+                                color
+                            };
 
-            texture_data = handle.join().expect("error joining thread");
+                            message.texture_data.lock().unwrap()[(i * 4) as usize] = rgb.r / 255.0;
+                            message.texture_data.lock().unwrap()[((i * 4) + 1) as usize] =
+                                rgb.g / 255.0;
+                            message.texture_data.lock().unwrap()[((i * 4) + 2) as usize] =
+                                rgb.b / 255.0;
+                            message.texture_data.lock().unwrap()[((i * 4) + 3) as usize] = 1.0;
+                        }
+                    })
+                })
+                .collect();
+
+            for handle in threads {
+                handle.join().unwrap();
+            }
         }
 
-        return Ok(texture_data);
+        Ok(Arc::try_unwrap(message.texture_data)
+            .unwrap()
+            .into_inner()
+            .unwrap())
     }
 
     #[new]
     fn py_new(_size: usize) -> FractalGenerator {
         FractalGenerator {}
+    }
+}
+
+struct ThreadHandle {
+    queue: Arc<Mutex<VecDeque<usize>>>,
+    texture_data: Arc<Mutex<Vec<f64>>>,
+    color_1: Color,
+    color_2: Color,
+    img_size: usize,
+    escape_constant: f64,
+    step: f64,
+    gen_func: Generators,
+    offset: [f64; 2],
+    iterations: u32,
+}
+
+unsafe impl Send for ThreadHandle {}
+unsafe impl Sync for ThreadHandle {}
+
+impl Clone for ThreadHandle {
+    fn clone(&self) -> Self {
+        ThreadHandle {
+            queue: self.queue.clone(),
+            texture_data: self.texture_data.clone(),
+            color_1: self.color_1,
+            color_2: self.color_2,
+            img_size: self.img_size,
+            escape_constant: self.escape_constant,
+            step: self.step,
+            gen_func: self.gen_func,
+            offset: self.offset,
+            iterations: self.iterations,
+        }
     }
 }
 

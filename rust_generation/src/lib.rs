@@ -44,7 +44,7 @@ impl FractalGenerator {
 
         let mut queue = VecDeque::<usize>::new();
 
-        const THREAD_COUNT: usize = 8;
+        const THREAD_COUNT: usize = 4;
 
         for i in 0..(img_size * img_size) {
             queue.push_back(i);

@@ -68,7 +68,7 @@ def save_btn_callback(sender, app_data, user_data):
     print("Rendering...")
 
     new_texture_data = program.generator.generate_fractal(
-        program.imgSize, iterations, [x, y], step, escape, program.func)
+        program.imgSize, iterations, [x, y], step, escape, program.func, default_values.THREAD_COUNT)
 
     print("Image Rendered")
 
@@ -102,7 +102,7 @@ class Program:
 
         print("Rendering...")
         texture_data = self.generator.generate_fractal(
-            self.imgSize, default_values.ITERATIONS, default_values.OFFSET, 1/np.power(2, default_values.ZOOM), default_values.ESCAPE_CONSTANT, self.func)
+            self.imgSize, default_values.ITERATIONS, default_values.OFFSET, 1/np.power(2, default_values.ZOOM), default_values.ESCAPE_CONSTANT, self.func, default_values.THREAD_COUNT)
         print("Image Rendered")
 
         with dpg.texture_registry(show=False):

@@ -27,6 +27,7 @@ impl FractalGenerator {
         step: f64,
         escape_constant: f64,
         gen_func: Generators,
+        thread_count: u8,
     ) -> PyResult<Vec<f64>> {
         let texture_data = vec![0.0; img_size * img_size * 4];
 
@@ -43,8 +44,6 @@ impl FractalGenerator {
         };
 
         let mut queue = VecDeque::<usize>::new();
-
-        const THREAD_COUNT: usize = 4;
 
         // Creating a queue for the threads
         for i in 0..(img_size * img_size) {
@@ -65,7 +64,7 @@ impl FractalGenerator {
         };
 
         // Spawning threads
-        let threads: Vec<_> = (0..THREAD_COUNT)
+        let threads: Vec<_> = (0..thread_count)
             .map(|_i| {
                 let message_reference = message.clone();
                 thread::spawn(move || {

@@ -60,78 +60,76 @@ impl FractalGenerator {
             iterations,
         };
 
-        unsafe {
-            let threads: Vec<_> = (0..THREAD_COUNT)
-                .map(|_i| {
-                    let message_reference = message.clone();
-                    thread::spawn(move || {
-                        let message = message_reference;
-                        loop {
-                            let i = match message.queue.lock().unwrap().pop_front() {
-                                Some(x) => x,
-                                None => break,
+        let threads: Vec<_> = (0..THREAD_COUNT)
+            .map(|_i| {
+                let message_reference = message.clone();
+                thread::spawn(move || {
+                    let message = message_reference;
+                    loop {
+                        let i = match message.queue.lock().unwrap().pop_front() {
+                            Some(x) => x,
+                            None => break,
+                        };
+
+                        let rgb = {
+                            let x = ((i % message.img_size) as f64
+                                - (message.img_size as f64 / 2.0))
+                                * message.step
+                                + message.offset[0];
+                            let y = (f64::floor(i as f64 / message.img_size as f64)
+                                - (message.img_size as f64 / 2.0))
+                                * step
+                                + offset[1];
+
+                            let gen_func = match message.gen_func {
+                                Generators::Mandelbrot => gen_mandelbrot,
+                                Generators::Cubic => gen_cubic,
+                                Generators::Cosz => gen_cosz,
                             };
 
-                            let rgb = {
-                                let x = ((i % message.img_size) as f64
-                                    - (message.img_size as f64 / 2.0))
-                                    * message.step
-                                    + message.offset[0];
-                                let y = (f64::floor(i as f64 / message.img_size as f64)
-                                    - (message.img_size as f64 / 2.0))
-                                    * step
-                                    + offset[1];
-
-                                let gen_func = match message.gen_func {
-                                    Generators::Mandelbrot => gen_mandelbrot,
-                                    Generators::Cubic => gen_cubic,
-                                    Generators::Cosz => gen_cosz,
-                                };
-
-                                let escape_time = match calc_fractal(
-                                    x,
-                                    y,
-                                    message.iterations,
-                                    message.escape_constant,
-                                    gen_func,
-                                ) {
-                                    Ok(x) => x,
-                                    Err(_) => panic!("Error!"),
-                                };
-
-                                let color: Color;
-
-                                if escape_time > message.iterations / 2 {
-                                    let factor = ((message.iterations) - (escape_time)) as f64
-                                        / (message.iterations) as f64;
-                                    let factor = factor * 2.0;
-
-                                    color = color_1 * factor;
-                                } else {
-                                    let factor = ((message.iterations) - (escape_time)) as f64
-                                        / (message.iterations) as f64;
-                                    let factor = (factor - 0.5) * 2.0;
-                                    color = message.color_1
-                                        + ((message.color_2 - message.color_1) * factor);
-                                }
-
-                                color
+                            let escape_time = match calc_fractal(
+                                x,
+                                y,
+                                message.iterations,
+                                message.escape_constant,
+                                gen_func,
+                            ) {
+                                Ok(x) => x,
+                                Err(_) => panic!("Error!"),
                             };
 
-                            message.texture_data.lock().unwrap()[(i * 4) as usize] = rgb.r / 255.0;
-                            message.texture_data.lock().unwrap()[((i * 4) + 1) as usize] =
-                                rgb.g / 255.0;
-                            message.texture_data.lock().unwrap()[((i * 4) + 2) as usize] =
-                                rgb.b / 255.0;
-                            message.texture_data.lock().unwrap()[((i * 4) + 3) as usize] = 1.0;
-                        }
-                    })
+                            let color: Color;
+
+                            if escape_time > message.iterations / 2 {
+                                let factor = ((message.iterations) - (escape_time)) as f64
+                                    / (message.iterations) as f64;
+                                let factor = factor * 2.0;
+
+                                color = color_1 * factor;
+                            } else {
+                                let factor = ((message.iterations) - (escape_time)) as f64
+                                    / (message.iterations) as f64;
+                                let factor = (factor - 0.5) * 2.0;
+                                color = message.color_1
+                                    + ((message.color_2 - message.color_1) * factor);
+                            }
+
+                            color
+                        };
+
+                        message.texture_data.lock().unwrap()[(i * 4) as usize] = rgb.r / 255.0;
+                        message.texture_data.lock().unwrap()[((i * 4) + 1) as usize] =
+                            rgb.g / 255.0;
+                        message.texture_data.lock().unwrap()[((i * 4) + 2) as usize] =
+                            rgb.b / 255.0;
+                        message.texture_data.lock().unwrap()[((i * 4) + 3) as usize] = 1.0;
+                    }
                 })
-                .collect();
+            })
+            .collect();
 
-            for handle in threads {
-                handle.join().unwrap();
-            }
+        for handle in threads {
+            handle.join().unwrap();
         }
 
         Ok(Arc::try_unwrap(message.texture_data)
@@ -146,7 +144,7 @@ impl FractalGenerator {
     }
 }
 
-unsafe fn calc_fractal(
+fn calc_fractal(
     x: f64,
     y: f64,
     iterations: u32,

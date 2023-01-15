@@ -3,6 +3,7 @@ use crate::color::Color;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 
+/// Shares data between FractalGenerator threads
 pub struct ThreadHandle {
     pub queue: Arc<Mutex<VecDeque<usize>>>,
     pub texture_data: Arc<Mutex<Vec<f64>>>,
@@ -15,9 +16,6 @@ pub struct ThreadHandle {
     pub offset: [f64; 2],
     pub iterations: u32,
 }
-
-unsafe impl Send for ThreadHandle {}
-unsafe impl Sync for ThreadHandle {}
 
 impl Clone for ThreadHandle {
     fn clone(&self) -> Self {

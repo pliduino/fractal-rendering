@@ -10,14 +10,16 @@ mod thread_handle;
 use crate::color::Color;
 pub use generators::Generators;
 use generators::*;
-pub use thread_handle::ThreadHandle;
+use thread_handle::ThreadHandle;
 
+// TODO: Add temporal generation
 #[pyclass]
 pub struct FractalGenerator {}
 
 #[pymethods]
 impl FractalGenerator {
-    unsafe fn generate_fractal(
+    /// Generates a 1 dimensional vector containing rgba values in sequence
+    fn generate_fractal(
         &mut self,
         img_size: usize,
         iterations: u32,
@@ -28,6 +30,7 @@ impl FractalGenerator {
     ) -> PyResult<Vec<f64>> {
         let texture_data = vec![0.0; img_size * img_size * 4];
 
+        // Colors to blend in the results
         let color_1 = Color {
             r: 200.0,
             g: 25.0,
@@ -43,6 +46,7 @@ impl FractalGenerator {
 
         const THREAD_COUNT: usize = 4;
 
+        // Creating a queue for the threads
         for i in 0..(img_size * img_size) {
             queue.push_back(i);
         }
@@ -60,6 +64,7 @@ impl FractalGenerator {
             iterations,
         };
 
+        // Spawning threads
         let threads: Vec<_> = (0..THREAD_COUNT)
             .map(|_i| {
                 let message_reference = message.clone();
@@ -87,16 +92,13 @@ impl FractalGenerator {
                                 Generators::Cosz => gen_cosz,
                             };
 
-                            let escape_time = match calc_fractal(
+                            let escape_time = calc_fractal(
                                 x,
                                 y,
                                 message.iterations,
                                 message.escape_constant,
                                 gen_func,
-                            ) {
-                                Ok(x) => x,
-                                Err(_) => panic!("Error!"),
-                            };
+                            );
 
                             let color: Color;
 
@@ -138,19 +140,21 @@ impl FractalGenerator {
             .unwrap())
     }
 
+    // New function used for the python module
     #[new]
     fn py_new(_size: usize) -> FractalGenerator {
         FractalGenerator {}
     }
 }
 
+/// Returns how many iterations were needed to escape a set value
 fn calc_fractal(
     x: f64,
     y: f64,
     iterations: u32,
     escape_constant: f64,
     gen_func: fn(num_complex::Complex<f64>) -> num_complex::Complex<f64>,
-) -> Result<u32, u8> {
+) -> u32 {
     let constant = num_complex::Complex::new(x, y);
     let mut next_z = num_complex::Complex::new(x, y);
 
@@ -160,11 +164,11 @@ fn calc_fractal(
         let distance = next_z.abs();
 
         if distance > escape_constant {
-            return Ok(i);
+            return i;
         }
 
         next_z += constant;
     }
 
-    Ok(iterations)
+    iterations
 }

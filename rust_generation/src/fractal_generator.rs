@@ -4,12 +4,13 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-pub mod generators;
-pub mod thread_handle;
+mod generators;
+mod thread_handle;
 
 use crate::color::Color;
-use generators::Generators;
-use thread_handle::ThreadHandle;
+pub use generators::Generators;
+use generators::*;
+pub use thread_handle::ThreadHandle;
 
 #[pyclass]
 pub struct FractalGenerator {}
@@ -168,14 +169,4 @@ unsafe fn calc_fractal(
     }
 
     Ok(iterations)
-}
-
-fn gen_mandelbrot(z: num_complex::Complex<f64>) -> num_complex::Complex<f64> {
-    z * z
-}
-fn gen_cubic(z: num_complex::Complex<f64>) -> num_complex::Complex<f64> {
-    z * z * z
-}
-fn gen_cosz(z: num_complex::Complex<f64>) -> num_complex::Complex<f64> {
-    z.cos() * z
 }

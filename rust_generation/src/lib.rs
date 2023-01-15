@@ -6,6 +6,6 @@ mod fractal_generator;
 #[pymodule]
 fn rust_generation(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<fractal_generator::FractalGenerator>()?;
-    m.add_class::<fractal_generator::generators::Generators>()?;
+    m.add_class::<fractal_generator::Generators>()?;
     Ok(())
 }

@@ -1,7 +1,7 @@
 # Windows:
 
 ``` make
-make 
+make
 ```
 
 ``` make
@@ -10,7 +10,7 @@ make run
 
 # Linux:
 
-Create a virtual environment and install the requirements. 
+Create a virtual environment.
 ``` bash
     python3 -m venv env
     ./env/bin/activate

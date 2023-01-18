@@ -58,7 +58,11 @@ impl FractalGenerator {
             color_1,
             color_2,
             step,
-            gen_func,
+            gen_func: match gen_func {
+                Generators::Mandelbrot => gen_mandelbrot,
+                Generators::Cubic => gen_cubic,
+                Generators::Cosz => gen_cosz,
+            },
             offset,
             iterations,
         };
@@ -85,18 +89,12 @@ impl FractalGenerator {
                                 * step
                                 + offset[1];
 
-                            let gen_func = match message.gen_func {
-                                Generators::Mandelbrot => gen_mandelbrot,
-                                Generators::Cubic => gen_cubic,
-                                Generators::Cosz => gen_cosz,
-                            };
-
                             let escape_time = calc_fractal(
                                 x,
                                 y,
                                 message.iterations,
                                 message.escape_constant,
-                                gen_func,
+                                message.gen_func,
                             );
 
                             let color: Color;

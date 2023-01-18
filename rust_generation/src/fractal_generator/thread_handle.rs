@@ -1,4 +1,3 @@
-use super::generators::Generators;
 use crate::color::Color;
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
@@ -12,7 +11,7 @@ pub struct ThreadHandle {
     pub img_size: usize,
     pub escape_constant: f64,
     pub step: f64,
-    pub gen_func: Generators,
+    pub gen_func: fn(num_complex::Complex<f64>) -> num_complex::Complex<f64>,
     pub offset: [f64; 2],
     pub iterations: u32,
 }

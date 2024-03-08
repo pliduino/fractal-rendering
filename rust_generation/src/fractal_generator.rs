@@ -99,18 +99,10 @@ impl FractalGenerator {
 
                             let color: Color;
 
-                            if escape_time > message.iterations / 2 {
-                                let factor = ((message.iterations) - (escape_time)) as f64
-                                    / (message.iterations) as f64;
-                                let factor = factor * 2.0;
-
-                                color = color_1 * factor;
-                            } else {
-                                let factor = ((message.iterations) - (escape_time)) as f64
-                                    / (message.iterations) as f64;
-                                let factor = (factor - 0.5) * 2.0;
-                                color = message.color_1
-                                    + ((message.color_2 - message.color_1) * factor);
+                            if escape_time < message.iterations {
+                                let factor = (escape_time) as f64
+                                    / 20.0;
+                                color = message.color_1.hue_shift(factor);
                             }
 
                             color

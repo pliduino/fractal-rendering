@@ -1,4 +1,5 @@
 use std::ops;
+use std::math;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub struct Color {
@@ -14,6 +15,34 @@ impl Color {
             r: 0.0,
             g: 0.0,
             b: 0.0,
+        }
+    }
+
+    pub fn hue_shift(Color this, float radian) -> Color
+    {
+        let cosR : float = cos(radian);
+        let sinR : float = sin(radian);
+
+        let mut r_matrix : float[3];
+        let mut g_matrix : float[3];
+        let mut b_matrix : float[3];
+
+        r_matrix[0] = cosR + (1.0 - cosR) / 3.0;
+        r_matrix[1] = 1.0/3.0 * (1.0 - cosR) - sqrt(1.0/3.0) * sinR;
+        r_matrix[2] = 1.0/3.0 * (1.0 - cosR) + sqrt(1.0/3.0) * sinR;
+
+        g_matrix[0] = 1.0/3.0 * (1.0 - cosR) + sqrt(1.0/3.0) * sinR;
+        g_matrix[1] = cosR + 1.0/3.0 * (1.0 - cosR);
+        g_matrix[2] = 1.0/3.0 * (1.0 - cosR) - sqrt(1.0/3.0) * sinR;
+
+        b_matrix[0] = 1.0/3.0 * (1.0 - cosR) - sqrt(1.0/3.0) * sinR;
+        b_matrix[1] = 1.0/3.0 * (1.0 - cosR) + sqrt(1.0/3.0) * sinR;
+        b_matrix[2] = cosR + (1.0 - cosR) / 3.0;
+        
+        Color {
+            r: this.r * r_matrix[0] + this.g * r_matrix[1] + this.b * r_matrix[2],
+            g: this.r * g_matrix[0] + this.g * g_matrix[1] + this.b * g_matrix[2],
+            b: this.r * b_matrix[0] + this.g * b_matrix[1] + this.b * b_matrix[2],
         }
     }
 }

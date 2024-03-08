@@ -31,16 +31,11 @@ impl FractalGenerator {
     ) -> PyResult<Vec<f64>> {
         let texture_data = vec![0.0; img_size * img_size * 4];
 
-        // Colors to blend in the results
+        // Base Color
         let color_1 = Color {
             r: 200.0,
-            g: 25.0,
-            b: 25.0,
-        };
-        let color_2 = Color {
-            r: 0.0,
             g: 200.0,
-            b: 255.0,
+            b: 200.0,
         };
 
         let mut queue = VecDeque::<usize>::new();
@@ -56,7 +51,6 @@ impl FractalGenerator {
             img_size,
             escape_constant,
             color_1,
-            color_2,
             step,
             gen_func: match gen_func {
                 Generators::Mandelbrot => gen_mandelbrot,

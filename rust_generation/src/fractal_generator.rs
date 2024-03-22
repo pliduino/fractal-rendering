@@ -35,7 +35,7 @@ impl FractalGenerator {
         let color_1 = Color {
             r: 200.0,
             g: 200.0,
-            b: 200.0,
+            b: 150.0,
         };
 
         let mut queue = VecDeque::<usize>::new();
@@ -94,9 +94,10 @@ impl FractalGenerator {
                             let color: Color;
 
                             if escape_time < message.iterations {
-                                let factor = (escape_time) as f64
-                                    / 20.0;
+                                let factor = (escape_time) as f64 / 3.0;
                                 color = message.color_1.hue_shift(factor);
+                            } else {
+                                color = Color::new();
                             }
 
                             color

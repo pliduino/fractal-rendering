@@ -1,3 +1,7 @@
+![Alt text](imgs/fractal_2.png)
+![Alt text](imgs/fractal_3.png)
+![Alt text](imgs/fractal_4.png)
+
 # Windows:
 
 ``` make

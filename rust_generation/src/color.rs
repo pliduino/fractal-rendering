@@ -1,5 +1,4 @@
 use std::ops;
-use std::math;
 
 #[derive(Default, Debug, Copy, Clone, PartialEq)]
 pub struct Color {
@@ -18,31 +17,30 @@ impl Color {
         }
     }
 
-    pub fn hue_shift(Color this, float radian) -> Color
-    {
-        let cosR : float = cos(radian);
-        let sinR : float = sin(radian);
+    pub(crate) fn hue_shift(&self, radian: f64) -> Color {
+        let cos_r: f64 = radian.cos();
+        let sin_r: f64 = radian.sin();
 
-        let mut r_matrix : float[3];
-        let mut g_matrix : float[3];
-        let mut b_matrix : float[3];
+        let mut r_matrix: [f64; 3] = [0.0; 3];
+        let mut g_matrix: [f64; 3] = [0.0; 3];
+        let mut b_matrix: [f64; 3] = [0.0; 3];
 
-        r_matrix[0] = cosR + (1.0 - cosR) / 3.0;
-        r_matrix[1] = 1.0/3.0 * (1.0 - cosR) - sqrt(1.0/3.0) * sinR;
-        r_matrix[2] = 1.0/3.0 * (1.0 - cosR) + sqrt(1.0/3.0) * sinR;
+        r_matrix[0] = cos_r + (1.0 - cos_r) / 3.0;
+        r_matrix[1] = 1.0 / 3.0 * (1.0 - cos_r) - f64::sqrt(1.0 / 3.0) * sin_r;
+        r_matrix[2] = 1.0 / 3.0 * (1.0 - cos_r) + f64::sqrt(1.0 / 3.0) * sin_r;
 
-        g_matrix[0] = 1.0/3.0 * (1.0 - cosR) + sqrt(1.0/3.0) * sinR;
-        g_matrix[1] = cosR + 1.0/3.0 * (1.0 - cosR);
-        g_matrix[2] = 1.0/3.0 * (1.0 - cosR) - sqrt(1.0/3.0) * sinR;
+        g_matrix[0] = 1.0 / 3.0 * (1.0 - cos_r) + f64::sqrt(1.0 / 3.0) * sin_r;
+        g_matrix[1] = cos_r + 1.0 / 3.0 * (1.0 - cos_r);
+        g_matrix[2] = 1.0 / 3.0 * (1.0 - cos_r) - f64::sqrt(1.0 / 3.0) * sin_r;
 
-        b_matrix[0] = 1.0/3.0 * (1.0 - cosR) - sqrt(1.0/3.0) * sinR;
-        b_matrix[1] = 1.0/3.0 * (1.0 - cosR) + sqrt(1.0/3.0) * sinR;
-        b_matrix[2] = cosR + (1.0 - cosR) / 3.0;
-        
+        b_matrix[0] = 1.0 / 3.0 * (1.0 - cos_r) - f64::sqrt(1.0 / 3.0) * sin_r;
+        b_matrix[1] = 1.0 / 3.0 * (1.0 - cos_r) + f64::sqrt(1.0 / 3.0) * sin_r;
+        b_matrix[2] = cos_r + (1.0 - cos_r) / 3.0;
+
         Color {
-            r: this.r * r_matrix[0] + this.g * r_matrix[1] + this.b * r_matrix[2],
-            g: this.r * g_matrix[0] + this.g * g_matrix[1] + this.b * g_matrix[2],
-            b: this.r * b_matrix[0] + this.g * b_matrix[1] + this.b * b_matrix[2],
+            r: self.r * r_matrix[0] + self.g * r_matrix[1] + self.b * r_matrix[2],
+            g: self.r * g_matrix[0] + self.g * g_matrix[1] + self.b * g_matrix[2],
+            b: self.r * b_matrix[0] + self.g * b_matrix[1] + self.b * b_matrix[2],
         }
     }
 }
